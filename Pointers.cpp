@@ -34,6 +34,8 @@ C::C()
 
 C::~C()
 {
+    delete ptrC2A;
+    delete ptrC2B;
     cout << "Destructed\n";
 }
 int C::showab()
