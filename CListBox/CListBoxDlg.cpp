@@ -164,18 +164,28 @@ HCURSOR CCListBoxDlg::OnQueryDragIcon()
 
 void CCListBoxDlg::OnBnClickedAddButton()
 {
-	// TODO: Add your control notification handler code here
+	UpdateData(TRUE);
+	m_IgnoredListBox.AddString(m_InputText); 
+	m_InputText = L"";
+	UpdateData(FALSE);
 }
 
 
 
 void CCListBoxDlg::OnBnClickedRemoveButton()
 {
-	// TODO: Add your control notification handler code here
+	int ignoredID = m_IgnoredListBox.GetCurSel();
+	m_IgnoredListBox.DeleteString(ignoredID);
+
 }
 
 
 void CCListBoxDlg::OnBnClickedClearallButton()
 {
-	// TODO: Add your control notification handler code here
+	/* TODO: Add Index field for every string for proper string adding & counting
+	for (int i = 0; i < m_IgnoredListBox.GetCount(); i++)
+	{
+		m_IgnoredListBox.DeleteString(i);
+	}
+	*/
 }
