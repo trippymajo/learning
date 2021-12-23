@@ -72,6 +72,7 @@ BEGIN_MESSAGE_MAP(CCListBoxDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_ADD_BUTTON, &CCListBoxDlg::OnBnClickedAddButton)
 	ON_BN_CLICKED(IDC_REMOVE_BUTTON, &CCListBoxDlg::OnBnClickedRemoveButton)
 	ON_BN_CLICKED(IDC_CLEARALL_BUTTON, &CCListBoxDlg::OnBnClickedClearallButton)
+	ON_BN_CLICKED(IDC_BROWSE, &CCListBoxDlg::OnBnClickedBrowse)
 END_MESSAGE_MAP()
 
 
@@ -179,11 +180,22 @@ void CCListBoxDlg::OnBnClickedRemoveButton()
 {
 	int ignoredID = m_IgnoredListBox.GetCurSel();
 	m_IgnoredListBox.DeleteString(ignoredID);
-
 }
 
 
 void CCListBoxDlg::OnBnClickedClearallButton()
 {
 	m_IgnoredListBox.ResetContent();
+
+}
+
+
+void CCListBoxDlg::OnBnClickedBrowse()
+{
+	CFileDialog browse_dlg(TRUE); //Dialog for Opening files
+	if (browse_dlg.DoModal() == IDOK)
+	{
+		m_InputText = browse_dlg.m_ofn.lpstrFileTitle;
+	}
+	UpdateData(FALSE);
 }

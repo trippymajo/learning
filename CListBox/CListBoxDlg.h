@@ -35,7 +35,10 @@ public:
 	// A text inputted by a user.
 	CString m_InputText;
 	CListBox m_IgnoredListBox;
+
 	afx_msg void OnBnClickedAddButton();
 	afx_msg void OnBnClickedRemoveButton();
 	afx_msg void OnBnClickedClearallButton();
+	afx_msg void OnBnClickedBrowse();
+	
 };
