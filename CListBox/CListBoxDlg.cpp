@@ -165,8 +165,11 @@ HCURSOR CCListBoxDlg::OnQueryDragIcon()
 void CCListBoxDlg::OnBnClickedAddButton()
 {
 	UpdateData(TRUE);
-	m_IgnoredListBox.AddString(m_InputText); 
-	m_InputText = L"";
+	if (m_InputText != L"")
+	{
+		m_IgnoredListBox.AddString(m_InputText);
+		m_InputText = L"";
+	}
 	UpdateData(FALSE);
 }
 
@@ -182,10 +185,5 @@ void CCListBoxDlg::OnBnClickedRemoveButton()
 
 void CCListBoxDlg::OnBnClickedClearallButton()
 {
-	/* TODO: Add Index field for every string for proper string adding & counting
-	for (int i = 0; i < m_IgnoredListBox.GetCount(); i++)
-	{
-		m_IgnoredListBox.DeleteString(i);
-	}
-	*/
+	m_IgnoredListBox.ResetContent();
 }
