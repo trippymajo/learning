@@ -7,6 +7,8 @@
 #include "CListBox.h"
 #include "CListBoxDlg.h"
 #include "afxdialogex.h"
+#include "afx.h"
+#include "afxtempl.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -171,6 +173,7 @@ void CCListBoxDlg::OnBnClickedAddButton()
 		m_IgnoredListBox.AddString(m_InputText);
 		m_InputText = L"";
 	}
+	UpdateArray();
 	UpdateData(FALSE);
 }
 
@@ -180,13 +183,14 @@ void CCListBoxDlg::OnBnClickedRemoveButton()
 {
 	int ignoredID = m_IgnoredListBox.GetCurSel();
 	m_IgnoredListBox.DeleteString(ignoredID);
+	UpdateArray();
 }
 
 
 void CCListBoxDlg::OnBnClickedClearallButton()
 {
 	m_IgnoredListBox.ResetContent();
-
+	UpdateArray();
 }
 
 
@@ -198,4 +202,22 @@ void CCListBoxDlg::OnBnClickedBrowse()
 		m_InputText = browse_dlg.m_ofn.lpstrFileTitle;
 	}
 	UpdateData(FALSE);
+}
+
+void CCListBoxDlg::UpdateArray()
+{
+	m_IgnoredArray.RemoveAll();
+	CString m_tempString;
+	int n;
+	if (m_IgnoredListBox.GetCount() == 0) m_IgnoredArray.FreeExtra();
+	else {
+		for (int i = 0; i < m_IgnoredListBox.GetCount(); i++)
+		{
+			n = m_IgnoredListBox.GetTextLen(i);
+			m_IgnoredListBox.GetText(i, m_tempString.GetBuffer(n));
+			m_IgnoredArray.Add(m_tempString);
+			m_tempString.ReleaseBuffer();
+		}
+		m_IgnoredArray.FreeExtra();
+	}
 }
