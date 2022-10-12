@@ -10,7 +10,6 @@ public:
 public:
 	CURL* curl;
 
-	bool auth(char email, char password);
-	bool getLP();
+	bool auth();
 	bool getReq();
 };
