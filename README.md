@@ -14,3 +14,6 @@ Just a selfmade bubble sorting with templates using in C++. Needed for better un
 
 # Zadachnik.cpp
 Very simple tasks, which were found in net or while reading "wise" books
+
+# mem_sru.cpp
+It is an answer to fun question to write own memcpy, which will be as good as original.
