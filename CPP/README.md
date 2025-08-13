@@ -17,3 +17,6 @@ Very simple tasks, which were found in net or while reading "wise" books
 
 # mem_sru.cpp
 It is an answer to fun question to write own memcpy, which will be as good as original.
+
+# Tic-Tac-Toe.cpp
+The beginning. The base. Just to admire where I started and where I am now.
