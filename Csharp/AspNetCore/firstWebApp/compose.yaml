@@ -1,0 +1,27 @@
+services:
+    mvcmovieapp:
+        build:
+            context: .
+        ports:
+            - 80:80
+        depends_on:
+            - sqlserver
+        environment:
+            - ASPNETCORE_ENVIRONMENT=Development
+            - ASPNETCORE_URLS=http://+:80
+        networks:
+            - prodnetwork
+        restart: on-failure
+
+    sqlserver:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        environment:
+            ACCEPT_EULA: "Y"
+            SA_PASSWORD: ${SA_PASSWORD}
+        ports:
+            - 1433:1433
+        networks:
+            - prodnetwork
+
+networks:
+    prodnetwork:
