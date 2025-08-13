@@ -6,6 +6,9 @@ Now its time to write down here what the hell are these files for future me.
 # \CListBox
 A project for understanding how MFC is working. Some operations and etc. That was needed for making UI && coding the program at work. Basic understanding.
 
+# \h-course-uc
+A project made while learning C++ memory advantages over other languages. Controlling, changing and reading memory via adresses and pointers.
+
 # \openCVTryout
 Some codes with openCV learning path.
 
