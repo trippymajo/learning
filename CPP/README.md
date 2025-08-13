@@ -6,6 +6,8 @@ Now its time to write down here what the hell are these files for future me.
 # \CListBox
 A project for understanding how MFC is working. Some operations and etc. That was needed for making UI && coding the program at work. Basic understanding.
 
+# \openCVTryout
+Some codes with openCV learning path.
 
 # \Tic_Tac_Toe_OOP
 The beginning. The base. First steps in to wold of OOP in C++. Just to admire where I started and where I am now.
