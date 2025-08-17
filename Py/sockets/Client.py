@@ -1,5 +1,7 @@
 import socket
 import sys
+import time
+import threading
 
 ###
 # Sockets are pretty low-level and in python there are such libs as 
@@ -38,18 +40,17 @@ def udp(host_name: str, host_port: int, msg: bytes) -> bytes:
     raise RuntimeError("Failed to send/receive UDP datagram to any resolved address")
 
 
-def tcp(host_name: str, host_port: int, msg: bytes):
+def tcp(host_name: str, host_port: int, msg: bytes) -> bytes:
     # Ask DNS about IPv4 and IPv6 if needed
     dns_response = socket.getaddrinfo(
         host_name, host_port,
         socket.AF_UNSPEC,
         socket.SOCK_STREAM,
-        socket.IPPROTO_TCP
-    )
+        socket.IPPROTO_TCP)
 
     DELIM = b"\r\n\r\n"     # Delim to end reading from server
     MAX_HEADER = 64 * 1024  # Max header size
-    RECV_SIZE = 4096        # Max size of response buffer
+    RECV_SIZE = 4096        # Per-recv chunk size
     PER_RECV_TIMEOUT = 3.0  # Timeout on connect, send and recv
     TOTAL_TIMEOUT = 10.0    # Total timeout
 
@@ -64,17 +65,30 @@ def tcp(host_name: str, host_port: int, msg: bytes):
                 s.sendall(msg)
 
                 # Reading response in chunks, until closing or timeout
-                chunks = bytearray()
+                buf = bytearray()
+                deadline = time.monotonic() + TOTAL_TIMEOUT
                 while True:
+                    p = buf.find(DELIM)
+                    if p != -1:
+                        return bytes(buf[:p + len(DELIM)])
+
+                    if len(buf) >= MAX_HEADER:
+                        raise RuntimeError("Header too large")
+
+                    if time.monotonic() > deadline:
+                        raise RuntimeError("Timed out waiting for headers")
+
                     try:
-                        part = s.recv(65536)
-                        if not part: # server closed connection
-                            break
-                        chunks.extend(part)
+                        chunk = s.recv(RECV_SIZE)
                     except socket.timeout:
+                        continue
+
+                    # Server closed connection
+                    if not chunk:
                         break
 
-                return bytes(chunks)
+                    buf.extend(chunk)
+
         except OSError as err:
             last_err = err
             print(f"Could not send/receive via {address}: {err}")
@@ -82,18 +96,40 @@ def tcp(host_name: str, host_port: int, msg: bytes):
     raise RuntimeError(f"Failed to send/receive TCP to {host_name}:{host_port}: {last_err}")
 
 
+def tcp_endless(host_name: str, host_port: int, msg: bytes) -> None:
+    # Ask DNS about IPv4 and IPv6 if needed
+    dns_response = socket.getaddrinfo(
+        host_name, host_port,
+        socket.AF_UNSPEC,
+        socket.SOCK_STREAM,
+        socket.IPPROTO_TCP)
+    
+    # going through IPvs provided by DNS
+    last_err = None
+    for address in dns_response:
+        af, socktype, protocol, canonname, socket_address = address
+        try:
+            with socket.socket(af, socktype, protocol) as s:
+                s.settimeout(PER_RECV_TIMEOUT)
+                s.connect(socket_address)
+                s.sendall(msg)
+
+
+
 def main():
-    is_connection = bool(sys.argv[1] == "1") # is TCP (1) or UDP (0)
+    connect_type = int(sys.argv[1]) # UDP(0), TCP(1), TCP_Endless
     host_name = sys.argv[2] # "www.example.com"
     host_port = int(sys.argv[3])
     msg = sys.argv[4]
     msg = msg.encode("utf-8")
 
     result = None
-    if is_connection:
+    if connect_type == 0:
+        result = udp(host_name, host_port, msg)
+    elif connect_type == 1:
         result = tcp(host_name, host_port, msg)
     else:
-        result = udp(host_name, host_port, msg)
+        tcp_endless(host_name, host_port, msg)
 
     if result is not None:
         print(f"Response:\n{result.decode('utf-8',  errors='replace')}")
