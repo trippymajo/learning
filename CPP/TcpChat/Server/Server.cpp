@@ -10,7 +10,7 @@ int main()
     ChatServer server(port);
     server.Run();
   }
-  catch (const std::exception ex)
+  catch (const std::exception& ex)
   {
     std::cout << "Exception occured with server!\n" << ex.what() << "\n";
     return 1;

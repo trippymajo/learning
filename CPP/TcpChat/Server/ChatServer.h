@@ -1,7 +1,8 @@
 #pragma once
-#include <thread>
 #include <mutex>
-#include <unordered_set>
+#include <atomic>
+#include <memory>
+#include <unordered_map>
 
 #include "winsock2.h"
 
@@ -16,13 +17,18 @@ public:
   void Run();
 
 private:
+  void Stop();
   void RemoveClient(ClientSession* client);
   void BroadcastMsg(const std::string& msg, ClientSession* sender);
+  SOCKET CreateListenSocket();
 
 private:
-  const char* m_port;
   SOCKET m_socket;
-  std::unordered_set<ClientSession*> m_clientSockets;
+
+  std::atomic<bool> m_isRunning;
+  std::string m_port;
+
+  std::unordered_map<ClientSession*, std::shared_ptr<ClientSession>> m_clientSockets;
   std::mutex m_clientsMutex;
 
   friend class ClientSession;

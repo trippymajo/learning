@@ -2,12 +2,14 @@
 #include <thread>
 #include <string>
 #include <mutex>
+#include <memory>
+#include <atomic>
 
 #include "winsock2.h"
 
 class ChatServer;
 
-class ClientSession
+class ClientSession : public std::enable_shared_from_this<ClientSession>
 {
 public:
   ClientSession(SOCKET socket, ChatServer* server);
@@ -15,7 +17,7 @@ public:
 
   void Start();
   void Send(const std::string& message);
-  void Disconnect();
+  void Stop();
   
   SOCKET GetSocket() { return m_socket; };
 
@@ -23,9 +25,10 @@ private:
   void Run();
 
 private:
-  bool m_isActive;
+  ChatServer* m_server;
   SOCKET m_socket;
+
+  std::atomic<bool> m_isActive;
   std::thread m_thread;
   std::mutex m_sendMutex;
-  ChatServer* m_server;
 };

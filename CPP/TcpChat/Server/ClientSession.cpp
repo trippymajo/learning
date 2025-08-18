@@ -4,68 +4,77 @@
 #include "ChatServer.h"
 
 using std::cout;
-using std::thread;
 using std::string;
 using std::mutex;
 using std::lock_guard;
 
+constexpr unsigned int RECV_BUF = 4096;
+
 ClientSession::ClientSession(SOCKET socket, ChatServer* server)
 {
-  m_isActive = true;
   m_socket = socket;
   m_server = server;
+  m_isActive = false;
 }
 
 ClientSession::~ClientSession() 
 {
-  Disconnect();
+  Stop();
 }
 
 void ClientSession::Start()
 {
-  m_thread = thread(&ClientSession::Run, this);
-  m_thread.detach();
+  m_isActive.store(true);
+  m_thread = std::thread(&ClientSession::Run, this);
+}
+
+void ClientSession::Stop()
+{
+  bool expected = true;
+  if (m_isActive.compare_exchange_strong(expected, false))
+  {
+    if (m_socket != INVALID_SOCKET)
+    {
+      int operationResult = shutdown(m_socket, SD_BOTH);
+      if (operationResult == -1)
+        cout << "Failed to shutdown client connection properly" << WSAGetLastError() << "\n";
+    }
+  }
+
+  if (m_thread.joinable())
+    m_thread.join();
+
+  if (m_socket != INVALID_SOCKET)
+  {
+    closesocket(m_socket);
+    m_socket = INVALID_SOCKET;
+  }
 }
 
 void ClientSession::Run()
 {
-  char buf[1024];
+  std::shared_ptr<ClientSession> self = shared_from_this();
+  char buf[RECV_BUF];
 
-  while (m_isActive)
+  while (m_isActive.load(std::memory_order_acquire))
   {
-    int bytes = recv(m_socket, buf, sizeof(buf) - 1, 0);
+    int bytes = recv(m_socket, buf, RECV_BUF, 0);
 
     if (bytes <= 0)
       break;
 
-    buf[bytes] = '\0';
-    string msg(buf);
+    string msg(buf, bytes);
 
     // Send to everyone
     m_server->BroadcastMsg(msg, this);
   }
 
-  Disconnect();
-
   m_server->RemoveClient(this);
+  m_isActive.store(false, std::memory_order_release);
 }
 
 void ClientSession::Send(const string& msg)
-{
+{ // TODO!!! Send all stream!
   lock_guard<mutex> lock(m_sendMutex);
   send(m_socket, msg.c_str(), msg.size(), 0);
-}
-
-void ClientSession::Disconnect()
-{
-  if (!m_isActive)
-    return;
-
-  m_isActive = false;
-
-  int operationResult = shutdown(m_socket, SD_BOTH);
-  if (operationResult == -1)
-    cout << "Failed to shutdown client connection properly" << WSAGetLastError() << "\n";
-
-  closesocket(m_socket);
 }

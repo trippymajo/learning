@@ -5,92 +5,123 @@
 #include "ChatServer.h"
 #include "ClientSession.h"
 
-using std::cin;
 using std::cout;
-using std::lock_guard;
 using std::mutex;
-using std::thread;
+using std::lock_guard;
+
+constexpr int MAX_CONNECTIONS = 10;
 
 ChatServer::ChatServer(const char* port)
 {
-  m_port = port;
   m_socket = INVALID_SOCKET;
+  m_isRunning.store(false);
+  m_port = port;
 }
 
 ChatServer::~ChatServer() 
 {
-  if (m_socket != INVALID_SOCKET)
-    closesocket(m_socket);
+  Stop();
+}
 
-  for (const auto& client : m_clientSockets)
-    delete client;
-  m_clientSockets.clear();
+void ChatServer::Stop()
+{
+  m_isRunning.store(false, std::memory_order_release);
+
+  if (m_socket != INVALID_SOCKET)
+  {
+    closesocket(m_socket);
+    m_socket = INVALID_SOCKET;
+  }
+
+  std::vector<std::shared_ptr<ClientSession>> snap;
+  {
+    lock_guard<mutex> lock(m_clientsMutex);
+    snap.reserve(m_clientSockets.size());
+    for (const auto& kval : m_clientSockets)
+      snap.push_back(kval.second);
+
+    m_clientSockets.clear();
+  }
+
+  for (const auto& pClient : snap)
+  {
+    if (pClient)
+      pClient->Stop();
+  }
 
   WSACleanup();
 }
 
-void ChatServer::Run()
+SOCKET ChatServer::CreateListenSocket()
 {
   // Init winsocket
   WSADATA wsaData;
-  int startupResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-  if (startupResult != 0)
+  int operationResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if (operationResult != 0)
   {
-    cout << "WSAStartup filed:" << startupResult << "\n";
-    return;
+    cout << "WSAStartup filed:" << operationResult << "\n";
+    return INVALID_SOCKET;
   }
 
-  struct addrinfo* result = nullptr, *ptr = nullptr, hints;
+  struct addrinfo* result = nullptr, * ptr = nullptr, hints;
   memset(&hints, 0, sizeof(hints)); // Make all members of the struct = 0
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
   hints.ai_flags = AI_PASSIVE;
-  
+
   // Resolve address
-  int operationResult = getaddrinfo(NULL, m_port, &hints, &result);
+  operationResult = getaddrinfo(NULL, m_port.c_str(), &hints, &result);
   if (operationResult != 0)
   {
     cout << "getaddrinfo failed:" << operationResult << "\n";
-    WSACleanup();
-    return;
+    return INVALID_SOCKET;
   }
+
+  SOCKET retVal = INVALID_SOCKET;
 
   // Creating socket
-  m_socket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-  if (m_socket == INVALID_SOCKET)
+  for (addrinfo* ptr = result; ptr != nullptr; ptr = ptr->ai_next)
   {
-    cout << "Socket creation filed" << WSAGetLastError() << "\n";
-    freeaddrinfo(result);
-    WSACleanup();
-    return;
+    SOCKET s = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+
+    if (s == INVALID_SOCKET)
+      continue;
+
+    if (bind(s, ptr->ai_addr, (int)ptr->ai_addrlen) == -1) 
+    {
+      closesocket(s);
+      continue;
+    }
+
+    if (listen(s, MAX_CONNECTIONS) == -1)
+    {
+      closesocket(s);
+      continue;
+    }
+
+    retVal = s;
+    break;
   }
 
-  // binding socket
-  operationResult = bind(m_socket, result->ai_addr, result->ai_addrlen);
-  if (operationResult == -1)
-  {
-    cout << "Socket binding filed" << WSAGetLastError() << "\n";
-    freeaddrinfo(result);
-    closesocket(m_socket);
-    WSACleanup();
-    return;
-  }
   freeaddrinfo(result);
 
-  // Listen socket
-  if (listen(m_socket, 10) == -1)
-  {
-    cout << "Failed listening socket" << WSAGetLastError() << "\n";
-    freeaddrinfo(result);
-    closesocket(m_socket);
-    WSACleanup();
+  if (retVal == INVALID_SOCKET)
+    cout << "Failed to create/bind/listen on any address.\n";
+
+  return retVal;
+}
+
+void ChatServer::Run()
+{
+  m_socket = CreateListenSocket();
+  if (m_socket == INVALID_SOCKET)
     return;
-  }
 
-  std::cout << "Server started...\n";
+  cout << "Server listening on port " << m_port << "\n";
+  m_isRunning.store(true, std::memory_order_release); // memory order release?
 
-  while (true)
+  while (m_isRunning.load(std::memory_order_acquire))
   {
     SOCKET socketClient = accept(m_socket, nullptr, nullptr);
     if (socketClient == INVALID_SOCKET)
@@ -100,33 +131,36 @@ void ChatServer::Run()
     }
 
     // Create Session
-    ClientSession* session = new ClientSession(socketClient, this);
-    session->Start();
-
+    auto session = std::make_shared<ClientSession>(socketClient, this);
     {
       lock_guard<mutex> lock(m_clientsMutex);
-      m_clientSockets.insert(session);
+      m_clientSockets[session.get()] = session;
     }
-  }
-}
-
-void ChatServer::RemoveClient(ClientSession* client)
-{
-  {
-    lock_guard<mutex> lock(m_clientsMutex);
-    m_clientSockets.erase(client);
-    delete client;
+    session->Start();
   }
 }
 
 void ChatServer::BroadcastMsg(const std::string& msg, ClientSession* sender)
 {
-  lock_guard<mutex> lock(m_clientsMutex);
-  for (const auto& client : m_clientSockets)
+  std::vector<std::shared_ptr<ClientSession>> snap;
   {
-    if (client == sender)
+    lock_guard<mutex> lock(m_clientsMutex);
+    snap.reserve(m_clientSockets.size());
+    for (const auto& kval : m_clientSockets)
+      snap.push_back(kval.second);
+  }
+
+  for (const auto& pClient : snap)
+  {
+    if (!pClient || pClient.get() == sender)
       continue;
 
-    client->Send(msg);
+    pClient->Send(msg);
   }
+}
+
+void ChatServer::RemoveClient(ClientSession* client)
+{
+  lock_guard<mutex> lock(m_clientsMutex);
+  m_clientSockets.erase(client);
 }
