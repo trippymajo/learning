@@ -1,6 +1,19 @@
 #include <iostream>
+#include "ChatClient.h"
 
 int main()
 {
-    std::cout << "Hello World!\n";
+  try
+  {
+    const char* port = "12345";
+    ChatClient cli(port);
+    cli.Run();
+  }
+  catch (const std::exception& ex)
+  {
+    std::cout << "Exception occured:" << ex.what() << "\n";
+    return 1;
+  }
+
+  return 0;
 }

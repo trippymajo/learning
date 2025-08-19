@@ -2,6 +2,7 @@
 #include <mutex>
 #include <atomic>
 #include <memory>
+#include <string>
 #include <unordered_map>
 
 #include "winsock2.h"

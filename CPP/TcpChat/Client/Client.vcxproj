@@ -72,7 +72,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ChatClient.cpp" />
     <ClCompile Include="Client.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ChatClient.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

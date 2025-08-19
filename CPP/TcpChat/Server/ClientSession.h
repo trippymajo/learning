@@ -23,6 +23,7 @@ public:
 
 private:
   void Run();
+  void GracefulShutDown();
 
 private:
   ChatServer* m_server;

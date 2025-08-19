@@ -9,6 +9,7 @@ using std::mutex;
 using std::lock_guard;
 
 constexpr unsigned int RECV_BUF = 4096;
+constexpr int RECV_TIMEOUT = 3000; // ms
 
 ClientSession::ClientSession(SOCKET socket, ChatServer* server)
 {
@@ -35,6 +36,7 @@ void ClientSession::Stop()
   {
     if (m_socket != INVALID_SOCKET)
     {
+      GracefulShutDown();
       int operationResult = shutdown(m_socket, SD_BOTH);
       if (operationResult == -1)
         cout << "Failed to shutdown client connection properly" << WSAGetLastError() << "\n";
@@ -48,6 +50,25 @@ void ClientSession::Stop()
   {
     closesocket(m_socket);
     m_socket = INVALID_SOCKET;
+  }
+}
+
+void ClientSession::GracefulShutDown()
+{
+  shutdown(m_socket, SD_SEND);
+
+  int recvTimeOut = RECV_TIMEOUT;
+  setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO,
+    reinterpret_cast<const char*>(&recvTimeOut), sizeof(recvTimeOut));
+
+  char buf[RECV_BUF];
+
+  while (true)
+  {
+    int bytes = recv(m_socket, buf, sizeof(buf), 0);
+
+    if (bytes <= 0)
+      break;
   }
 }
 
@@ -74,7 +95,20 @@ void ClientSession::Run()
 }
 
 void ClientSession::Send(const string& msg)
-{ // TODO!!! Send all stream!
+{
   lock_guard<mutex> lock(m_sendMutex);
-  send(m_socket, msg.c_str(), msg.size(), 0);
+
+  const char* ptr = msg.data();
+  size_t size = msg.size();
+
+  while (size > 0)
+  {
+    int sent = send(m_socket, ptr, static_cast<int>(size), 0);
+
+    if (sent <= 0)
+      break;
+
+    ptr += sent;
+    size -= static_cast<size_t>(sent);
+  }
 }
