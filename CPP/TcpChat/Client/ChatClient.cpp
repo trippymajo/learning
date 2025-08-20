@@ -1,5 +1,4 @@
 #include <iostream>
-#include <string>
 
 #include "ChatClient.h"
 #include "ws2tcpip.h"
@@ -12,10 +11,11 @@ using std::string;
 constexpr unsigned int RECV_BUF = 4096;
 constexpr int RECV_TIMEOUT = 3000; // ms
 
-ChatClient::ChatClient(const char* port)
+ChatClient::ChatClient(const char* ipadd, const char* port)
 {
   m_isActive.store(false, std::memory_order_release);
   m_port = port;
+  m_ipadd = ipadd;
   m_socket = INVALID_SOCKET;
 }
 
@@ -23,7 +23,7 @@ void ChatClient::ReceiveMessages()
 {
   char buf[1024];
 
-  while (m_isActive)
+  while (m_isActive.load(std::memory_order_acquire))
   {
     int bytes = recv(m_socket, buf, sizeof(buf) - 1, 0);
 
@@ -35,7 +35,7 @@ void ChatClient::ReceiveMessages()
     }
 
     buf[bytes] = '\0';
-    string msg(buf);
+    string msg(buf, bytes);
 
     cout << msg << "\n";
   }
@@ -83,7 +83,7 @@ void ChatClient::Run()
   hints.ai_protocol = IPPROTO_TCP;
   hints.ai_flags = 0;
 
-  operationResult = getaddrinfo(nullptr, m_port, &hints, &result);
+  operationResult = getaddrinfo(m_ipadd.c_str(), m_port.c_str(), &hints, &result);
   if (operationResult != 0)
   {
     cout << "getaddrinfo failed:" << operationResult << "\n";
@@ -99,7 +99,7 @@ void ChatClient::Run()
       continue;
 
     // Try connect socket
-    if (connect(m_socket, ptr->ai_addr, ptr->ai_addrlen) == 0)
+    if (connect(m_socket, ptr->ai_addr, (int)ptr->ai_addrlen) == 0)
         break;
 
     closesocket(m_socket);

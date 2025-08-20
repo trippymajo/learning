@@ -1,36 +1,40 @@
 #pragma once
-#include <mutex>
-#include <atomic>
-#include <memory>
+
 #include <string>
-#include <unordered_map>
+#include <thread>
+#include <vector>
+#include <memory>
+#include <atomic>
+#include <mutex>
 
 #include "winsock2.h"
 
 class ClientSession;
 
-class ChatServer
+class ChatServer 
 {
 public:
-  ChatServer(const char* port);
+  ChatServer(const std::string& ip, const std::string& port);
   ~ChatServer();
 
-  void Run();
-
-private:
+  void Start();
   void Stop();
-  void RemoveClient(ClientSession* client);
-  void BroadcastMsg(const std::string& msg, ClientSession* sender);
-  SOCKET CreateListenSocket();
+  void BroadcastMsg(const std::string& msg, ClientSession* pSender);
 
 private:
-  SOCKET m_socket;
+  void AcceptClients(SOCKET socket);
+  void PrintSockaddr(const sockaddr* addr);
 
-  std::atomic<bool> m_isRunning;
+private:
+  std::vector<SOCKET> CreateListeningSockets();
+
+  std::string m_ip;
   std::string m_port;
+  std::vector<SOCKET> m_listenSockets;
 
-  std::unordered_map<ClientSession*, std::shared_ptr<ClientSession>> m_clientSockets;
+  std::atomic<bool> m_running;
+  std::vector<std::thread> m_acceptThreads;
+
+  std::vector<std::shared_ptr<ClientSession>> m_clients;
   std::mutex m_clientsMutex;
-
-  friend class ClientSession;
 };

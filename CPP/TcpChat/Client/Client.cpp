@@ -1,12 +1,15 @@
 #include <iostream>
 #include "ChatClient.h"
 
+#pragma comment(lib, "Ws2_32.lib")
+
 int main()
 {
   try
   {
-    const char* port = "12345";
-    ChatClient cli(port);
+    const char* ipadd = "127.0.0.1";
+    const char* port = "27015";
+    ChatClient cli(ipadd, port);
     cli.Run();
   }
   catch (const std::exception& ex)
