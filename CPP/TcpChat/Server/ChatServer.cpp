@@ -27,11 +27,23 @@ ChatServer::~ChatServer()
 void ChatServer::Start()
 {
   cout << "Strarting server...\n";
+  {
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    {
+      cerr << "WSAStartup failed\n";
+      return;
+    }
+  }
+
   for (const auto& ip : m_ips)
     m_listenSockets.push_back(CreateListeningSocket(ip));
 
   if (m_listenSockets.size() == 0)
+  {
     cerr << "Failed to create listening sockets\n";
+    return;
+  }
 
   m_running.store(true, std::memory_order_release);
 
@@ -73,10 +85,6 @@ void ChatServer::Stop()
 SOCKET ChatServer::CreateListeningSocket(const std::string& ip)
 {
   SOCKET retSocket = INVALID_SOCKET;
-
-  WSADATA wsaData;
-  if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-    return retSocket;
 
   struct addrinfo hints, *result = nullptr;
   memset(&hints, 0, sizeof(hints)); // make all fields 0
