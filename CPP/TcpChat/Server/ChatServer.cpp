@@ -12,9 +12,9 @@ using std::cerr;
 
 constexpr int MAX_LISTEN = 10;
 
-ChatServer::ChatServer(const std::string& ip, const std::string& port)
+ChatServer::ChatServer(const std::vector<std::string>& ips, const std::string& port)
 {
-  m_ip = ip;
+  m_ips = ips;
   m_port = port;
   m_running.store(false, std::memory_order_release);
 }
@@ -27,7 +27,9 @@ ChatServer::~ChatServer()
 void ChatServer::Start()
 {
   cout << "Strarting server...\n";
-  m_listenSockets = CreateListeningSockets();
+  for (const auto& ip : m_ips)
+    m_listenSockets.push_back(CreateListeningSocket(ip));
+
   if (m_listenSockets.size() == 0)
     cerr << "Failed to create listening sockets\n";
 
@@ -68,13 +70,13 @@ void ChatServer::Stop()
   WSACleanup();
 }
 
-std::vector<SOCKET> ChatServer::CreateListeningSockets()
+SOCKET ChatServer::CreateListeningSocket(const std::string& ip)
 {
-  std::vector<SOCKET>sockets;
+  SOCKET retSocket = INVALID_SOCKET;
 
   WSADATA wsaData;
   if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-    return sockets;
+    return retSocket;
 
   struct addrinfo hints, *result = nullptr;
   memset(&hints, 0, sizeof(hints)); // make all fields 0
@@ -83,12 +85,14 @@ std::vector<SOCKET> ChatServer::CreateListeningSockets()
   hints.ai_protocol = IPPROTO_TCP;
   hints.ai_flags = AI_PASSIVE;
 
-  if (getaddrinfo(m_ip.c_str(), m_port.c_str(), &hints, &result) != 0)
-    return sockets;
+  if (getaddrinfo(ip.c_str(), m_port.c_str(), &hints, &result) != 0)
+    return retSocket;
 
   for (addrinfo* ptr = result; ptr != nullptr; ptr = ptr->ai_next)
   {
     SOCKET s = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+    int opt = 1;
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&opt), sizeof(opt));
 
     if (s == INVALID_SOCKET)
       continue;
@@ -107,11 +111,12 @@ std::vector<SOCKET> ChatServer::CreateListeningSockets()
 
     cout << "Server listening on: ";
     PrintSockaddr(ptr->ai_addr);
-    sockets.push_back(s);
+    retSocket = s;
+    break;
   }
 
   freeaddrinfo(result);
-  return sockets;
+  return retSocket;
 }
 
 void ChatServer::PrintSockaddr(const sockaddr* addr)

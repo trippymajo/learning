@@ -14,7 +14,7 @@ class ClientSession;
 class ChatServer 
 {
 public:
-  ChatServer(const std::string& ip, const std::string& port);
+  ChatServer(const std::vector<std::string>& ips, const std::string& port);
   ~ChatServer();
 
   void Start();
@@ -26,10 +26,10 @@ private:
   void PrintSockaddr(const sockaddr* addr);
 
 private:
-  std::vector<SOCKET> CreateListeningSockets();
+  SOCKET CreateListeningSocket(const std::string& ip);
 
-  std::string m_ip;
   std::string m_port;
+  std::vector<std::string> m_ips;
   std::vector<SOCKET> m_listenSockets;
 
   std::atomic<bool> m_running;

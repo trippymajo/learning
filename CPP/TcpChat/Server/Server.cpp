@@ -1,16 +1,23 @@
 #include <iostream>
+#include <vector>
+#include <string>
 #include "ChatServer.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
 int main()
 {
-  const char* ipadd = "";
+  const std::vector<std::string> ipadds
+  {
+    "127.0.0.1",
+    "::1"
+  };
+
   const char* port = "27015";
 
   try
   {
-    ChatServer server(ipadd, port);
+    ChatServer server(ipadds, port);
     server.Start();
   }
   catch (const std::exception& ex)
