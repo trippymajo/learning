@@ -100,7 +100,8 @@ SOCKET ChatServer::CreateListeningSocket(const std::string& ip)
   {
     SOCKET s = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
     int opt = 1;
-    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&opt), sizeof(opt));
+    // SO_REUSEADDR SO_EXCLUSIVEADDRUSE
+    setsockopt(s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, reinterpret_cast<const char*>(&opt), sizeof(opt));
 
     if (s == INVALID_SOCKET)
       continue;

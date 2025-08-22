@@ -5,15 +5,28 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-int main()
+int main(int argc, char* argv[])
 {
-  const std::vector<std::string> ipadds
-  {
-    "127.0.0.1",
-    "::1"
-  };
+  std::vector<std::string> ipadds;
+  std::string port = "27015";
 
-  const char* port = "27015";
+  if (argc > 1) 
+  {
+    port = argv[1];
+
+    for (int i = 2; i < argc; ++i)
+      ipadds.emplace_back(argv[i]);
+  }
+
+  // If no ip provided, than standard
+  if (ipadds.empty()) 
+  {
+    ipadds = 
+    {
+        "127.0.0.1",
+        "::1"
+    };
+  }
 
   try
   {
