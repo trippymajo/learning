@@ -5,6 +5,7 @@
 
 int main(int argc, char* argv[])
 {
+  // Lookback localhost
   const char* ipadd = "127.0.0.1";
   const char* port = "27015";
 

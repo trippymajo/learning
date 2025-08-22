@@ -21,6 +21,7 @@ int main(int argc, char* argv[])
   // If no ip provided, than standard
   if (ipadds.empty()) 
   {
+    // Lookback localhost
     ipadds = 
     {
         "127.0.0.1",
