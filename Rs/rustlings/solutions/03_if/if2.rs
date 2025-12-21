@@ -1,4 +1,3 @@
-// TODO: Fix the compiler error on this function.
 fn picky_eater(food: &str) -> &str {
     if food == "strawberry" {
         "Yummy!"
@@ -9,29 +8,16 @@ fn picky_eater(food: &str) -> &str {
     }
 }
 
-fn picky_eater2(food: &str) -> &str {
-    match food {
-        "strawberry" => "Yummy!",
-        "potato" => "I guess I can eat that.",
-        _ => "No thanks!",
-    }
-}
-
 fn main() {
-    println!("{}", picky_eater2("strawberry"));
-    println!("{}", picky_eater2("potato"));
-    println!("{}", picky_eater2("suhganuiot"));
+    // You can optionally experiment here.
 }
 
-// TODO: Read the tests to understand the desired behavior.
-// Make all tests pass without changing them.
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn yummy_food() {
-        // This means that calling `picky_eater` with the argument "strawberry" should return "Yummy!".
         assert_eq!(picky_eater("strawberry"), "Yummy!");
     }
 
