@@ -1,9 +1,9 @@
 fn array_and_vec1() -> ([i32; 4], Vec<i32>) {
     let a = [10, 20, 30, 40]; // Array
 
-    let v = a.to_vec();
-    let v = Vec::from(a);
-    (a, v)
+    let _v = a.to_vec();
+    let _v = Vec::from(a);
+    (a, _v)
 }
 
 fn array_and_vec() -> ([i32; 4], Vec<i32>) {
