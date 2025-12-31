@@ -1,6 +1,6 @@
 DON'T EDIT THIS FILE!
 
-hashmaps1
+options1
 
 intro1
 variables1
@@ -44,3 +44,7 @@ strings4
 modules1
 modules2
 modules3
+hashmaps1
+hashmaps2
+hashmaps3
+quiz2
