@@ -1,6 +1,6 @@
 DON'T EDIT THIS FILE!
 
-options2
+generics1
 
 intro1
 variables1
@@ -49,3 +49,11 @@ hashmaps2
 hashmaps3
 quiz2
 options1
+options2
+options3
+errors1
+errors2
+errors3
+errors4
+errors5
+errors6
