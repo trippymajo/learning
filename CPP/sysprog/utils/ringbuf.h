@@ -23,6 +23,6 @@ private:
   unsigned int* data;
   size_t m_front;
   size_t m_back;
-  size_t m_capacity;
   size_t m_count;
+  size_t m_capacity;
 };
