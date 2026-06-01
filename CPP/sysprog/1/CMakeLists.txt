@@ -21,10 +21,7 @@ option(ENABLE_GLOB_SEARCH
     OFF)
 
 set(UTILS_DIR ${CMAKE_SOURCE_DIR}/../utils)
-set(UTILS_SOURCES 
-    ${UTILS_DIR}/unit.cpp
-    ${UTILS_DIR}/ringbuf.cpp
-)
+set(UTILS_SOURCES ${UTILS_DIR}/unit.cpp)
 
 include_directories(${UTILS_DIR})
 
